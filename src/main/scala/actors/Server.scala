@@ -4,47 +4,46 @@ import java.util.Date
 
 import akka.actor._
 import akka.routing.RoundRobinGroup
+import scala.collection.SortedMap
+import scala.collection.mutable.ListBuffer
+import matrix.Matrix
 import tasks._
 import messages._
-
-import scala.collection.mutable.ListBuffer
 
 /**
   * Created by valhalla on 06/06/16.
   */
 
-class Server(name: String, clients: List[ActorRef], system: ActorSystem) extends Actor with ActorLogging {
-  val router = system.actorOf(Props.empty.withRouter(RoundRobinGroup(clients.map(_.path.toString))))
-  val taskSize = 1000000
-  val dummyTasks = List.tabulate(taskSize)(index => new Task(seq = index,
-                                                             seqGroup = index + 1,
-                                                             vector1 = List(dummyRandomIntGenerator, dummyRandomIntGenerator),
-                                                             vector2 = List(dummyRandomIntGenerator, dummyRandomIntGenerator)))
-
-  val results = ListBuffer.empty[CompletedTask]
+class Server(name: String, clients: List[ActorRef], system: ActorSystem, taskList: List[Task]) extends Actor {
+  private val router = system.actorOf(Props.empty.withRouter(RoundRobinGroup(clients.map(_.path.toString))))
+  private val results = ListBuffer.empty[CompletedTask]
+  private var startTime: Long = 0
 
   def receive = {
     case start: Start =>
-      println(s"[$name] : Actor System is being started at ${start.date}")
+      startTime = start.millis
+      println(s"[$name] : Actor System is being started with ${start.taskList.size} tasks..")
       init()
 
     case taskResult: TaskResult =>
       println(s"[$name] : task result received from ${taskResult.name} with seq ${taskResult.completedTask.seq} is : ${taskResult.completedTask.result} - ${new Date()}")
       results += taskResult.completedTask
-      if (results.size == taskSize) self ! Finish(new Date())
+      if (results.size == taskList.size) self ! Finish(System.currentTimeMillis())
 
     case finish: Finish =>
-      // println(s"Results : ${results.sortBy(_.seq).toList}")
-      println(s"[$name] : Actor System is being terminated at ${finish.date}")
-      // todo : may poison pill required for router ?
+      println(s"[$name] : Actor System is being terminated... Execution time : ${finish.millis - startTime} ms")
+      printResult()
       system.terminate()
   }
 
-  def dummyRandomIntGenerator: Int = (Math.random() * 10 + 1).toInt
+  private def printResult(): Unit = {
+    val resultMatrix = SortedMap(results.groupBy(_.seqGroup).toSeq:_*).mapValues(cj => cj.sortBy(_.seq).toList.map(c => c.result)).values.toList
+    Matrix.print(resultMatrix)
+  }
 
-  def init(): Unit = {
-    println(s"[$name] assigning $taskSize task(s) to ${clients.size} client(s)...")
-    for (task <- dummyTasks) router ! TaskAssign(name, task)
+  private def init(): Unit = {
+    println(s"[$name] assigning ${taskList.size} task(s) to ${clients.size} client(s)...")
+    for (task <- taskList) router ! TaskAssign(name, task)
   }
 }
 

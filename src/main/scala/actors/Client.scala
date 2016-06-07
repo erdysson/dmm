@@ -1,7 +1,6 @@
 package actors
 
 import java.util.Date
-
 import akka.actor.{Props, Actor}
 import messages._
 
