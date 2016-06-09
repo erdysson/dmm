@@ -10,6 +10,7 @@ import tasks.{WorkerTask, CompletedTask, Task}
   * Created by valhalla on 07/06/16.
   */
 
+// todo : move to commons
 trait Serializer {
   def serializer(task: AnyRef): Array[Byte] = {
     val outputStream = new ByteArrayOutputStream()
@@ -68,15 +69,17 @@ trait Serializer {
   }
 }
 
+// todo : move to messages
 case class ReceivePacket(d: DatagramPacket)
 case class SendPacket(wt: WorkerTask, address: InetAddress, port: Int)
 
+// todo : move to commons
 case class Host(val address: InetAddress = InetAddress.getLocalHost, val port: Int, maxDataSize: Int = 4096)
 
 // todo : separate receiver and sender groups maybe ?
-
 // todo : create mixin class composition with worker for ack sender / receiver
 
+// todo : move to actors
 class Worker(socket: DatagramSocket) extends Actor with Serializer {
   def receive = {
     case p: ReceivePacket =>
