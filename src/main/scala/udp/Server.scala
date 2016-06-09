@@ -25,9 +25,9 @@ import scala.collection.mutable.ListBuffer
 
 
 /*
-  - todo : client distributor router actor system
-  - todo : calculator router actor system
-
+  - todo : client distributor router actor system -> in main
+  - todo : result calculator router actor system -> self calculating
+  - todo : ack listener -> distributor
  */
 
 object Server extends Serializer {
