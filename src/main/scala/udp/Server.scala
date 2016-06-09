@@ -25,21 +25,17 @@ import scala.collection.mutable.ListBuffer
 
 
 /*
-  - todo : client distributor router actor system -> in main
-  - todo : result calculator router actor system -> self calculating
-  - todo : ack listener -> distributor
+  - todo : client distributor router actor system -> in main [actor group having the information of the host]
+  - todo : result calculator router actor system -> common, shared [actor pool] to collect data and handle
+  - todo : ack listener -> [actor pool] to listen acks and verify / detect packets
  */
 
 object Server extends Serializer {
   val system = ActorSystem("Server")
   val server = new Host(port = 9876)
   val socket = new DatagramSocket(server.port)
-
-  val workers = List.tabulate(4)(i => system.actorOf(Props(classOf[Worker], "Worker" + i, "Server", socket), name = "Server" + i))
-  // todo : do not use round robin group !
-  val router = system.actorOf(Props.empty.withRouter(RoundRobinGroup(workers.map(_.path.toString))))
-  val router2 = system.actorOf(RoundRobinPool(4).props(Props(classOf[Worker], s"Worker", "Server", socket)), "router")
-  val router3 = system.actorOf(BalancingPool(4).props(Props(classOf[Worker], s"Worker", "Server", socket)), "router")
+  val numberOfProcessors = Runtime.getRuntime.availableProcessors
+  val router = system.actorOf(BalancingPool(numberOfProcessors).props(Props(classOf[Worker], socket)), "serverRouter")
 
   @throws[Exception]
   def main(args: Array[String]) {
@@ -49,7 +45,7 @@ object Server extends Serializer {
     val matrix = Matrix.random(4, withLogging = false)
     val transposedMatrix = Matrix.transpose(matrix, withLogging = false)
     val distribution = Matrix.distribute(matrix, transposedMatrix, withLogging = false)
-    var results = ListBuffer.empty[CompletedTask]
+    @volatile var results = ListBuffer.empty[CompletedTask]
 
     val clients = List.tabulate(3)(i => (InetAddress.getLocalHost, 9875 - i))
 

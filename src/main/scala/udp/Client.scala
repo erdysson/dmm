@@ -3,7 +3,7 @@ package udp
 import java.io._
 import java.net.{SocketException, DatagramPacket, InetAddress, DatagramSocket}
 import akka.actor._
-import akka.routing.RoundRobinGroup
+import akka.routing.BalancingPool
 import tasks.{WorkerTask, CompletedTask, Task}
 
 /**
@@ -74,7 +74,10 @@ case class SendPacket(wt: WorkerTask, address: InetAddress, port: Int)
 case class Host(val address: InetAddress = InetAddress.getLocalHost, val port: Int, maxDataSize: Int = 4096)
 
 // todo : separate receiver and sender groups maybe ?
-class Worker(name: String, group: String, socket: DatagramSocket) extends Actor with Serializer {
+
+// todo : create mixin class composition with worker for ack sender / receiver
+
+class Worker(socket: DatagramSocket) extends Actor with Serializer {
   def receive = {
     case p: ReceivePacket =>
       val serverMessage = deserializer(p.d.getData)
@@ -82,46 +85,45 @@ class Worker(name: String, group: String, socket: DatagramSocket) extends Actor 
       serverMessage.isInstanceOf[Task] match {
         case true =>
           val message = serverMessage.asInstanceOf[Task]
-          println(s"[$group $name] received => Seq: ${message.seq}, SeqGroup: ${message.seqGroup}")
+          println(s"[${self.path.toString}] received => Seq: ${message.seq}, SeqGroup: ${message.seqGroup}")
           self ! SendPacket(message.complete, p.d.getAddress, p.d.getPort)
 
         case _ =>
           val message = serverMessage.asInstanceOf[CompletedTask]
-          println(s"[$group $name] received => Seq: ${message.seq}, SeqGroup: ${message.seqGroup}")
+          println(s"[${self.path.toString}] received => Seq: ${message.seq}, SeqGroup: ${message.seqGroup}")
           self ! SendPacket(message, p.d.getAddress, p.d.getPort)
       }
 
     case p: SendPacket =>
       try {
-        p.wt.isInstanceOf[CompletedTask] match {
-          case true =>
-            val ct = p.wt.asInstanceOf[CompletedTask]
-            println(s"[$group $name] sending => Seq: ${ct.seq}, SeqGroup: ${ct.seqGroup}")
-            val reply = serializer(ct)
+        p.wt match {
+          case CompletedTask(seq, seqGroup, result) =>
+            println(s"[${self.path.toString}] sending => Seq: $seq, SeqGroup: $seqGroup")
+            val reply = serializer(p.wt)
             socket.send(new DatagramPacket(reply, reply.length, p.address, p.port))
 
-          case _ =>
-            val t = p.wt.asInstanceOf[Task]
-            println(s"[$group $name] sending => Seq: ${t.seq}, SeqGroup: ${t.seqGroup}")
-            val reply = serializer(t)
+          case Task(seq, seqGroup, vector1, vector2) =>
+            println(s"[${self.path.toString}] sending => Seq: $seq, SeqGroup: $seqGroup")
+            val reply = serializer(p.wt)
             socket.send(new DatagramPacket(reply, reply.length, p.address, p.port))
         }
       } catch {
         case e: SocketException =>
-          println(s"exception in sender [$group $name]")
+          println(s"exception in sender [${self.path.toString}]")
           self ! PoisonPill
       }
   }
 }
 
+// todo : write start script for all instances
 object Client {
   val system = ActorSystem("Client")
   val client = new Host(port = 9875)
   val socket = new DatagramSocket(client.port)
+  val numberOfProcessors = Runtime.getRuntime.availableProcessors
+  val router = system.actorOf(BalancingPool(numberOfProcessors).props(Props(classOf[Worker], socket)), "clientRouter")
 
-  val workers = List.tabulate(4)(i => system.actorOf(Props(classOf[Worker], "Worker" + i, "Client", socket), name = "Worker" + i))
-  val router = system.actorOf(Props.empty.withRouter(RoundRobinGroup(workers.map(_.path.toString))))
-
+  @throws[Exception]
   def main(args: Array[String]) {
     println("Client listening on port 9875...")
     try {
