@@ -24,6 +24,8 @@ class Worker(socket: DatagramSocket) extends Actor with Serializer {
             println(s"[${self.path.toString}] received => Seq: ${ct.seq}, SeqGroup: ${ct.seqGroup}")
             self ! SendPacket(ct, p.d.getAddress, p.d.getPort)
         }
+      } catch {
+        case e: SocketException => println(s"exception in receiver [${self.path.toString}]")
       }
 
     case p: SendPacket =>
