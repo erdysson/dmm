@@ -22,3 +22,6 @@ case class SendToServer(completedTask: CompletedTask, address: InetAddress, port
 // common messages
 case class Terminate(d: Date)
 case class Start(d: Date)
+case class ServerPacket(seq: Int, timestamp: Long, task: Task)
+case class ClientPacket(seq: Int, timestamp: Long, completedTask: CompletedTask)
+

@@ -16,15 +16,17 @@ class ClientWorker(socket: DatagramSocket, master: ActorRef) extends Actor with 
 
   def receive = {
     case ReceiveFromServer(packet) =>
-      val task: Task = deserializer(packet.getData).asInstanceOf[Task]
-      println(s"[${self.path.toString}] received task from server with (Seq: ${task.order})")
-      val completedTask = Task.complete(task)
+      val serverPacket = deserializer(packet.getData).asInstanceOf[ServerPacket]
+      println(s"[${self.path.toString}] received server packet with (Seq: ${serverPacket.task.order})")
+      val completedTask = Task.complete(serverPacket.task)
 
       self ! SendToServer(completedTask, packet.getAddress, packet.getPort)
 
     case SendToServer(completedTask, address, port) =>
-      println(s"[${self.path.toString}] sending completed task to server with (Seq: ${completedTask.order}, Result: ${completedTask.result})")
-      val replyPacket = serializer(completedTask)
+      Thread.sleep(100) // todo : remove
+      println(s"[${self.path.toString}] sending client packet to server with (Seq: ${completedTask.order}, Result: ${completedTask.result})")
+      val clientPacket = new ClientPacket(completedTask.order, System.currentTimeMillis(), completedTask)
+      val replyPacket = serializer(clientPacket)
       socket.send(new DatagramPacket(replyPacket, replyPacket.length, address, port))
   }
 }

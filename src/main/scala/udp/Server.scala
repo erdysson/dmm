@@ -5,31 +5,33 @@ import java.util.Date
 import akka.actor.{ActorRef, Props, Actor, ActorSystem}
 import akka.routing.RoundRobinPool
 import messages._
-import scala.collection.SortedMap
 import scala.collection.mutable.ListBuffer
 import matrix.Matrix
-import tasks.CompletedTask
+import tasks._
 import common.Serializer
 
 /**
   * Created by taner.gokalp on 07/06/16.
   */
 
-class Packet()
-
 class ServerWorker(socket: DatagramSocket, master: ActorRef) extends Actor with Serializer {
+  private val timeout = 1000
 
-  def receive = {
+  def active: Receive = {
     case SendToClient(task, address, port) =>
-      println(s"[${self.path.toString}] sending task to client with (Seq: ${task.order})")
-      val packet = serializer(task)
+      println(s"[${self.path.toString}] sending server packet to client with (Seq: ${task.order})")
+      val serverPacket = new ServerPacket(task.order, System.currentTimeMillis(), task)
+      val packet = serializer(serverPacket)
       socket.send(new DatagramPacket(packet, packet.length, address, port))
 
     case ReceiveFromClient(packet) =>
-      val completedTask = deserializer(packet.getData).asInstanceOf[CompletedTask]
-      println(s"[${self.path.toString}] received completed task from client with (Seq: ${completedTask.order}, Result: ${completedTask.result})")
-      master ! Result(completedTask)
+      val clientPacket = deserializer(packet.getData).asInstanceOf[ClientPacket]
+
+      println(s"[${self.path.toString}] received client packet from client with (Seq: ${clientPacket.completedTask.order}, Result: ${clientPacket.completedTask.result})")
+      master ! Result(clientPacket.completedTask)
   }
+
+  def receive = active
 }
 
 object ServerWorker {
