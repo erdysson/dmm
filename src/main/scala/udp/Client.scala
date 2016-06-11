@@ -23,8 +23,7 @@ class ClientWorker(socket: DatagramSocket, master: ActorRef) extends Actor with 
       self ! SendToServer(completedTask, packet.getAddress, packet.getPort)
 
     case SendToServer(completedTask, address, port) =>
-      Thread.sleep(100) // todo : remove
-      println(s"[${self.path.toString}] sending client packet to server with (Seq: ${completedTask.order}, Result: ${completedTask.result})")
+      println(s"[${self.path.toString}] sending client packet with (Seq: ${completedTask.order}, Result: ${completedTask.result})")
       val clientPacket = new ClientPacket(completedTask.order, System.currentTimeMillis(), completedTask)
       val replyPacket = serializer(clientPacket)
       socket.send(new DatagramPacket(replyPacket, replyPacket.length, address, port))
@@ -37,7 +36,7 @@ object ClientWorker {
 /**************************************************************************************************************************************************************/
 class ClientMaster(client: Host) extends Actor {
   val socket = new DatagramSocket(client.port)
-  val poolSize = 4
+  val poolSize = Runtime.getRuntime.availableProcessors
   val system = ActorSystem("ClientMaster")
   val router = system.actorOf(RoundRobinPool(poolSize).props(ClientWorker(socket, self)), name = "ClientSlave")
 
