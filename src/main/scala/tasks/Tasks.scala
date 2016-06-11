@@ -3,18 +3,16 @@ package tasks
 import matrix.Matrix
 
 /**
-  * Created by valhalla on 06/06/16.
+  * Created by taner.gokalp on 06/06/16.
   */
 
 // todo : move complete task into actor
 
 abstract class WorkerTask
 
-case class Task(val seq: Int, val seqGroup: Int, val vector1: List[Int], val vector2: List[Int]) extends WorkerTask {
-  def complete: CompletedTask = new CompletedTask(seq, seqGroup, Matrix.multiply(vector1, vector2))
-  override def toString = s"Task: { seq: $seq, seqGroup: $seqGroup, vector1: $vector1, vector2: $vector2 }"
-}
+case class Task(val seq: Int, val seqGroup: Int, val vector1: List[Int], val vector2: List[Int]) extends WorkerTask
+case class CompletedTask(val seq: Int, val seqGroup: Int, val result: Int) extends WorkerTask
 
-case class CompletedTask(val seq: Int, val seqGroup: Int, val result: Int) extends WorkerTask {
-  override def toString = s"Completed Task: { seq: $seq, seqGroup: $seqGroup, result: $result }"
+object Task {
+  def complete(task: Task): CompletedTask = new CompletedTask(task.seq, task.seqGroup, Matrix.multiply(task.vector1, task.vector2))
 }

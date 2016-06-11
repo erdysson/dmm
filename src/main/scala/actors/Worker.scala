@@ -1,7 +1,7 @@
 package actors
 
 import java.net.{SocketException, DatagramPacket, DatagramSocket}
-import akka.actor.{PoisonPill, Props, Actor}
+import akka.actor.{Props, Actor}
 import common.Serializer
 import messages.{SendPacket, ReceivePacket}
 import tasks.{CompletedTask, Task}
@@ -14,12 +14,11 @@ class Worker(socket: DatagramSocket) extends Actor with Serializer {
   def receive = {
     case p: ReceivePacket =>
       try {
-        val serverMessage = deserializer(p.d.getData)
-
-        serverMessage match {
+        val incoming = deserializer(p.d.getData)
+        incoming match {
           case t: Task =>
             println(s"[${self.path.toString}] received => Seq: ${t.seq}, SeqGroup: ${t.seqGroup}")
-            self ! SendPacket(t.complete, p.d.getAddress, p.d.getPort)
+            self ! SendPacket(Task.complete(t), p.d.getAddress, p.d.getPort)
 
           case ct: CompletedTask =>
             println(s"[${self.path.toString}] received => Seq: ${ct.seq}, SeqGroup: ${ct.seqGroup}")
@@ -41,9 +40,7 @@ class Worker(socket: DatagramSocket) extends Actor with Serializer {
             socket.send(new DatagramPacket(reply, reply.length, p.address, p.port))
         }
       } catch {
-        case e: SocketException =>
-          println(s"exception in sender [${self.path.toString}]")
-          self ! PoisonPill
+        case e: SocketException => println(s"exception in sender [${self.path.toString}]")
       }
   }
 }
