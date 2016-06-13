@@ -98,13 +98,10 @@ object Server extends Serializer {
     val system = ActorSystem("Server")
     val router = system.actorOf(RoundRobinPool(poolSize).props(ServerWorker(socket, server.maxDataSize)), name = "Worker")
 
-    var m = Map.empty[Int, CompletedTask]
-
     println("server started at port 9876...")
 
     try {
       for (i <- distribution.indices) {
-        m += (distribution(i).order -> distribution(i))
         router ! SendToClient(distribution(i), remoteData._1, remoteData._2)
 
         val receivePacket = new DatagramPacket(new Array[Byte](server.maxDataSize), server.maxDataSize)
