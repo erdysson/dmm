@@ -1,6 +1,6 @@
-package tasks
+package application.tasks
 
-import matrix.Matrix
+import application.matrix.Matrix
 
 /**
   * Created by taner.gokalp on 06/06/16.

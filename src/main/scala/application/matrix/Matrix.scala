@@ -1,11 +1,11 @@
-package matrix
+package application.matrix
 
 /**
   * Created by valhalla on 06/06/16.
   */
 
 import scala.collection.mutable.ListBuffer
-import tasks.Task
+import application.tasks.Task
 
 object Matrix {
   def print(matrix: Vector[Vector[Int]]) {
@@ -20,8 +20,8 @@ object Matrix {
     val transposeEnd = System.currentTimeMillis()
 
     if (withLogging) {
-      println(s"TRANSPOSITION TIME : ${transposeEnd - transposeStart} milliseconds for ${matrix.size} x ${matrix.size} matrix")
-      println(s"<< transposed ${matrix.size} x ${matrix.size} matrix >>")
+      println(s"TRANSPOSITION TIME : ${transposeEnd - transposeStart} milliseconds for ${matrix.size} x ${matrix.size} application.matrix")
+      println(s"<< transposed ${matrix.size} x ${matrix.size} application.matrix >>")
       Matrix.print(transposedMatrix)
       println("......................................................................................")
     }
@@ -41,8 +41,8 @@ object Matrix {
     val randomMatrixEnd = System.currentTimeMillis()
 
     if (withLogging) {
-      println(s"RANDOM MATRIX CREATION TIME : ${randomMatrixEnd - randomMatrixStart} milliseconds for ${matrix.size} x ${matrix.size} matrix")
-      println(s"<< generated ${matrix.size} x ${matrix.size} matrix >>")
+      println(s"RANDOM MATRIX CREATION TIME : ${randomMatrixEnd - randomMatrixStart} milliseconds for ${matrix.size} x ${matrix.size} application.matrix")
+      println(s"<< generated ${matrix.size} x ${matrix.size} application.matrix >>")
       Matrix.print(matrix)
       println("......................................................................................")
     }
@@ -67,7 +67,7 @@ object Matrix {
 
     if (withLogging) {
       val distributionEnd = System.currentTimeMillis()
-      println(s"DISTRIBUTION TIME : ${distributionEnd - distributionStart} milliseconds for ${matrix1.size} x ${matrix2.size} matrix multiplication")
+      println(s"DISTRIBUTION TIME : ${distributionEnd - distributionStart} milliseconds for ${matrix1.size} x ${matrix2.size} application.matrix multiplication")
       println(s"<< generated distribution list with ${distribution.size} operation(s) : $distribution >>")
       println("......................................................................................")
     }
