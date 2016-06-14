@@ -16,7 +16,7 @@ object Client1Demo {
   val udpChannel = UDPChannel(config._1, config._2, 4096)
 
   val masterSystem = ActorSystem("Client1")
-  val masterActor = masterSystem.actorOf(Client[Task]("WorkerPool", udpChannel))
+  val masterActor = masterSystem.actorOf(Client[Task]("WorkerPool", udpChannel, 4))
 
   @throws[Exception]
   def main(args: Array[String]) {

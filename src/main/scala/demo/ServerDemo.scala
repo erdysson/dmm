@@ -14,16 +14,17 @@ import transport.udp.channel.UDPChannel
   */
 
 object ServerDemo {
-  val matrix = Matrix.random(10, withLogging = true)
+  val matrix = Matrix.random(4, withLogging = true)
   val transpose = Matrix.transpose(matrix, withLogging = true)
 
   val taskList = Matrix.distribute(matrix, transpose)
 
   val config = (InetAddress.getLocalHost, 9876)
+  val remoteConfig = (InetAddress.getLocalHost, 9875)
   val udpChannel = UDPChannel(config._1, config._2, 4096)
 
   val masterSystem = ActorSystem("Server")
-  val masterActor = masterSystem.actorOf(Server[CompletedTask]("WorkerPool", udpChannel))
+  val masterActor = masterSystem.actorOf(Server[CompletedTask]("WorkerPool", udpChannel, 4))
 
   @throws[Exception]
   def main(args: Array[String]) {
