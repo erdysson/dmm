@@ -1,7 +1,8 @@
-package transport.udp
+package transport.udp.worker
 
 import akka.actor.{Actor, ActorRef, Props}
-import messages.{ReTransmit, Result}
+import messages._
+import transport.udp.channel.UDPChannel
 
 /**
   * Created by taner.gokalp on 14/06/16.

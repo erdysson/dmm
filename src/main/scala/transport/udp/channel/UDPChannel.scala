@@ -1,6 +1,7 @@
-package transport.udp
+package transport.udp.channel
 
-import java.net.{DatagramPacket, InetAddress, DatagramSocket}
+import java.net.{DatagramPacket, DatagramSocket, InetAddress}
+import transport.udp.{UDPPacket, WaitingUDPPacket}
 import transport.utils.Serializer
 
 /**

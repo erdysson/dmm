@@ -7,7 +7,7 @@ import application.host.Server
 import application.matrix.Matrix
 import application.tasks.CompletedTask
 import messages.Process
-import transport.udp.UDPChannel
+import transport.udp.channel.UDPChannel
 
 /**
   * Created by taner.gokalp on 14/06/16.

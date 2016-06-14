@@ -4,7 +4,8 @@ import java.net.InetAddress
 
 import akka.actor.ActorSystem
 import application.tasks.Task
-import transport.udp.{UDPChannel, UDPMaster}
+import transport.udp.UDPMaster
+import transport.udp.channel.UDPChannel
 
 /**
   * Created by taner.gokalp on 14/06/16.

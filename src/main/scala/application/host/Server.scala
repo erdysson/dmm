@@ -2,8 +2,9 @@ package application.host
 
 import akka.actor._
 import akka.routing.RoundRobinPool
-import messages.{CheckStatus, Receive, Send}
-import transport.udp._
+import messages._
+import transport.udp.channel.UDPChannel
+import transport.udp.worker.UDPWorker
 import scala.concurrent.duration._
 import scala.collection.SortedMap
 
@@ -54,5 +55,5 @@ class Server[A](name: String, channel: UDPChannel, workerPoolSize: Int = Runtime
 }
 
 object Server {
-  def apply[A](name: String, channel: UDPChannel, workerPoolSize: Int = Runtime.getRuntime.availableProcessors()): Props = Props(classOf[UDPMaster[A]], name, channel, workerPoolSize)
+  def apply[A](name: String, channel: UDPChannel, workerPoolSize: Int = Runtime.getRuntime.availableProcessors()): Props = Props(classOf[Server[A]], name, channel, workerPoolSize)
 }
