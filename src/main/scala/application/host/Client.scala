@@ -1,47 +1,53 @@
 package application.host
 
+import java.net.InetAddress
+
 import akka.actor._
 import akka.routing.RoundRobinPool
-import messages._
+import application.tasks.Task
+import messages.{CheckStatus, Listen, Finalize}
+
 import transport.udp.channel.UDPChannel
-import transport.udp.worker.UDPWorker
+import transport.udp.worker._
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
   * Created by taner.gokalp on 14/06/16.
   */
 
-class Client[A](name: String, channel: UDPChannel, workerPoolSize: Int = Runtime.getRuntime.availableProcessors()) extends Actor {
+class Client(name: String, channel: UDPChannel, workerPoolSize: Int = Runtime.getRuntime.availableProcessors()) extends Actor {
   private val actorSystem = ActorSystem(name)
   private var router: ActorRef = _
   private var scheduler: Cancellable = _
 
   override def preStart(): Unit = {
-    router = actorSystem.actorOf(RoundRobinPool(workerPoolSize).props(UDPWorker(channel, self)))
+    router = actorSystem.actorOf(RoundRobinPool(workerPoolSize).props(ClientWorker(channel, self)))
     println(s"[$name] - Worker actor system created...")
     scheduler = actorSystem.scheduler.schedule(1.second, 4.seconds, router, CheckStatus())
     println(s"[$name] - Status checker scheduler created...")
   }
 
-  def process(resultList: List[Any]): Unit = {
-    for (i <- resultList.indices) {
-      router ! Send(resultList(i).complete)
-      router ! Receive()
+  def process(configuredResultList: List[(Any, (InetAddress, Int))]): Unit = {
+    for (i <- configuredResultList.indices) {
+      val oneResult = configuredResultList(i)
+      router ! SendToServer(oneResult._1.asInstanceOf[Task].complete(), oneResult._2)
+      router ! ReceiveFromServer()
     }
   }
 
   def active: Receive = {
     // todo : continuous listening
     case Listen() =>
-      router ! Receive()
+      router ! ReceiveFromServer()
 
-    case Result(udpPacket) =>
-      val data = udpPacket.data.asInstanceOf[A]
+    case ResultFromServer(udpPacket, remoteConfig) =>
+      val data = udpPacket.data
       println(s"[$name] Master actor received task result $data")
-      process(List(data))
+      process(List((data, remoteConfig)))
 
-    case ReTransmit(resultList) =>
-      process(resultList)
+    case ReTransmitToServer(configuredReTransmissionList) =>
+      process(configuredReTransmissionList)
 
     case Finalize() =>
       scheduler.cancel()
@@ -55,5 +61,5 @@ class Client[A](name: String, channel: UDPChannel, workerPoolSize: Int = Runtime
 }
 
 object Client {
-  def apply[A](name: String, channel: UDPChannel, workerPoolSize: Int = Runtime.getRuntime.availableProcessors()): Props = Props(classOf[Client[A]], name, channel, workerPoolSize)
+  def apply[A](name: String, channel: UDPChannel, workerPoolSize: Int = Runtime.getRuntime.availableProcessors()): Props = Props(classOf[Client], name, channel, workerPoolSize)
 }

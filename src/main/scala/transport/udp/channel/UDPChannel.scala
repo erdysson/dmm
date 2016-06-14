@@ -10,7 +10,7 @@ import transport.utils.Serializer
 
 class UDPChannel(val address: InetAddress, val port: Int, mtu: Int) extends Serializer {
   private val socket = new DatagramSocket(port)
-
+  // todo : parametrize timeout value
   private val timeout = 4000
   private var packetMap = scala.collection.mutable.Map.empty[Int, WaitingUDPPacket]
 

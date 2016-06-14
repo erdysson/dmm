@@ -13,7 +13,7 @@ import application.host.Client
   */
 object Client1Demo {
   val config = (InetAddress.getLocalHost, 9875)
-  val udpChannel = UDPChannel(config._1, config._2, 4096)
+  val udpChannel = UDPChannel(config._1, config._2, 3048)
 
   val masterSystem = ActorSystem("Client1")
   val masterActor = masterSystem.actorOf(Client[Task]("WorkerPool", udpChannel, 4))

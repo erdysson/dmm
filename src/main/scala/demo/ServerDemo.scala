@@ -21,7 +21,7 @@ object ServerDemo {
 
   val config = (InetAddress.getLocalHost, 9876)
   val remoteConfig = (InetAddress.getLocalHost, 9875)
-  val udpChannel = UDPChannel(config._1, config._2, 4096)
+  val udpChannel = UDPChannel(config._1, config._2, 2048)
 
   val masterSystem = ActorSystem("Server")
   val masterActor = masterSystem.actorOf(Server[CompletedTask]("WorkerPool", udpChannel, 4))
