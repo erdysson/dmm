@@ -11,6 +11,7 @@ import scala.collection.SortedMap
 /**
   * Created by taner.gokalp on 14/06/16.
   */
+
 class Server[A](name: String, channel: UDPChannel, workerPoolSize: Int = Runtime.getRuntime.availableProcessors()) extends Actor {
   private val actorSystem = ActorSystem(name)
   private var router: ActorRef = _
@@ -19,9 +20,9 @@ class Server[A](name: String, channel: UDPChannel, workerPoolSize: Int = Runtime
 
   override def preStart(): Unit = {
     router = actorSystem.actorOf(RoundRobinPool(workerPoolSize).props(UDPWorker(channel, self)))
-    println("Worker actor system created...")
+    println(s"[$name] - Worker actor system created...")
     scheduler = actorSystem.scheduler.schedule(1.second, 4.seconds, router, CheckStatus())
-    println("Status checker scheduler created...")
+    println(s"[$name] - Status checker scheduler created...")
   }
 
   def process(taskList: List[Any]): Unit = {
@@ -38,7 +39,7 @@ class Server[A](name: String, channel: UDPChannel, workerPoolSize: Int = Runtime
     case Result(udpPacket) =>
       val data = udpPacket.data.asInstanceOf[A]
       resultMap += (data.order -> data.result)
-      println(s"Master Actor received task result $data")
+      println(s"[$name] Master actor received task result $data")
 
     case ReTransmit(taskList) =>
       process(taskList)
