@@ -22,7 +22,7 @@ class UDPChannel(val address: InetAddress, val port: Int, mtu: Int) extends Seri
     val dataAsByteStream = serialize(dataAsUDPPacket)
     val dataAsDatagramPacket = new DatagramPacket(dataAsByteStream, dataAsByteStream.length, remoteConfig._1, remoteConfig._2)
 
-    packetMap += (seqCounter -> new WaitingUDPPacket(System.currentTimeMillis(), data))
+    packetMap += (seqCounter -> new WaitingUDPPacket(System.currentTimeMillis(), data, remoteConfig))
     println(s"Adding packet to map with sequence number $seqCounter")
 
     println(s"$address:$port sending $data as datagram packet with sequence number $seqCounter...")
@@ -52,7 +52,6 @@ class UDPChannel(val address: InetAddress, val port: Int, mtu: Int) extends Seri
         println(s"dropping packet which does not exist with sequence number $ack")
         None
     }
-    // udpPacket
   }
 
   def checkStackStatus(): List[Any] = {
@@ -65,7 +64,7 @@ class UDPChannel(val address: InetAddress, val port: Int, mtu: Int) extends Seri
         val packetsNeedsToBeReTransmitted = scala.collection.mutable.ListBuffer.empty[Any]
         packetMap = packetMap.filter(waitingUdpPacket => {
           System.currentTimeMillis() - waitingUdpPacket._2.timestamp >= timeout match {
-            case true => packetsNeedsToBeReTransmitted += waitingUdpPacket._2.data; false
+            case true => packetsNeedsToBeReTransmitted += (waitingUdpPacket._2.data, waitingUdpPacket._2.remoteConfig); false
             case _ => true
           }
         })
