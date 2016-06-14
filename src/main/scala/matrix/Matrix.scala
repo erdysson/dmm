@@ -50,6 +50,7 @@ object Matrix {
   }
 
   // todo : recurse or improve the distribution
+  // todo : keep groupSeq in task and completed task
   def distribute(matrix1: Vector[Vector[Int]], matrix2: Vector[Vector[Int]], withLogging: Boolean = false): ListBuffer[Task] = {
     var order = 0
     var distribution = ListBuffer.empty[Task]

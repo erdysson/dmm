@@ -1,15 +1,11 @@
 package transport.udp
 
 import java.net.{DatagramPacket, InetAddress, DatagramSocket}
-
 import transport.utils.Serializer
 
 /**
   * Created by taner.gokalp on 13/06/16.
   */
-
-private case class WaitingUDPPacket(timestamp: Long, data: Any)
-case class UDPPacket(seq: Int, ack: Int, data: Any)
 
 class UDPChannel(val address: InetAddress, val port: Int, mtu: Int) extends Serializer {
   private val socket = new DatagramSocket(port)
@@ -79,4 +75,8 @@ class UDPChannel(val address: InetAddress, val port: Int, mtu: Int) extends Seri
         }
     }
   }
+}
+
+object UDPChannel {
+  def apply(address: InetAddress, port: Int, mtu: Int) = new UDPChannel(address, port, mtu)
 }
