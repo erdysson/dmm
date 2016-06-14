@@ -12,6 +12,7 @@ import transport.udp.UDPPacket
 case class Result(udpPacket: UDPPacket)
 case class ReTransmit(dataList: List[Any])
 case class Process(taskList: List[Any])
+case class Listen()
 case class Finalize()
 
 /********** worker messages **********/

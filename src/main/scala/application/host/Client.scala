@@ -11,8 +11,6 @@ import scala.concurrent.duration._
   * Created by taner.gokalp on 14/06/16.
   */
 
-case class Listen()
-
 class Client[A](name: String, channel: UDPChannel, workerPoolSize: Int = Runtime.getRuntime.availableProcessors()) extends Actor {
   private val actorSystem = ActorSystem(name)
   private var router: ActorRef = _
