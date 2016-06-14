@@ -17,10 +17,10 @@ class UDPChannel(val address: InetAddress, val port: Int, mtu: Int) extends Seri
   private var seqCounter = 0
   private var ackCounter = 0
 
-  def send(data: Any): Unit = {
+  def send(data: Any, remoteConfig: (InetAddress, Int)): Unit = {
     val dataAsUDPPacket = new UDPPacket(seq = seqCounter, ack = ackCounter, data)
     val dataAsByteStream = serialize(dataAsUDPPacket)
-    val dataAsDatagramPacket = new DatagramPacket(dataAsByteStream, dataAsByteStream.length)
+    val dataAsDatagramPacket = new DatagramPacket(dataAsByteStream, dataAsByteStream.length, remoteConfig._1, remoteConfig._2)
 
     packetMap += (seqCounter -> new WaitingUDPPacket(System.currentTimeMillis(), data))
     println(s"Adding packet to map with sequence number $seqCounter")
