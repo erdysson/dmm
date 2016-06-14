@@ -9,7 +9,7 @@ import transport.udp.{UDPChannel, UDPMaster}
 /**
   * Created by taner.gokalp on 14/06/16.
   */
-object Client1 {
+object Client1Demo {
   val config = (InetAddress.getLocalHost, 9875)
   val udpChannel = UDPChannel(config._1, config._2, 4096)
 

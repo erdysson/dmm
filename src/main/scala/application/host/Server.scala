@@ -1,15 +1,16 @@
-package transport.udp
+package application.host
 
 import akka.actor._
 import akka.routing.RoundRobinPool
-import scala.collection.SortedMap
+import messages.{CheckStatus, Receive, Send}
+import transport.udp._
 import scala.concurrent.duration._
+import scala.collection.SortedMap
 
 /**
   * Created by taner.gokalp on 14/06/16.
   */
-
-class UDPMaster[A](name: String, channel: UDPChannel, workerPoolSize: Int = Runtime.getRuntime.availableProcessors()) extends Actor {
+class Server[A](name: String, channel: UDPChannel, workerPoolSize: Int = Runtime.getRuntime.availableProcessors()) extends Actor {
   private val actorSystem = ActorSystem(name)
   private var router: ActorRef = _
   private var scheduler: Cancellable = _
@@ -52,6 +53,6 @@ class UDPMaster[A](name: String, channel: UDPChannel, workerPoolSize: Int = Runt
   def receive = active
 }
 
-object UDPMaster {
+object Server {
   def apply[A](name: String, channel: UDPChannel, workerPoolSize: Int = Runtime.getRuntime.availableProcessors()): Props = Props(classOf[UDPMaster[A]], name, channel, workerPoolSize)
 }

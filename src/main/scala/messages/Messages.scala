@@ -1,6 +1,8 @@
-package transport.udp
+package messages
 
 import java.util.Date
+
+import transport.udp.UDPPacket
 
 /**
   * Created by taner.gokalp on 14/06/16.
