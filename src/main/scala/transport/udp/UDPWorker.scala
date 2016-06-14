@@ -12,8 +12,8 @@ import scala.collection.SortedMap
 
 /********** master messages **********/
 case class Result(udpPacket: UDPPacket)
-case class ReTransmit(dataList: List[AnyRef])
-case class Process(taskList: List[AnyRef])
+case class ReTransmit(dataList: List[Any])
+case class Process(taskList: List[Any])
 case class Finalize()
 
 /********** worker messages **********/
@@ -22,12 +22,12 @@ case class WakeUp(now: Date)
 case class Sleep(now: Date)
 
 /* data exchange - validation based messages */
-case class Send(data: AnyRef)
+case class Send(data: Any)
 case class Receive()
 case class CheckStatus()
 
 /********** Worker Actor Implementation **********/
-class UDPWorker(channel: UDPChannel, master: ActorRef) extends Actor {
+class UDPWorker(val channel: UDPChannel, master: ActorRef) extends Actor {
 
   def active: Receive = {
     case Sleep(now) =>
@@ -39,7 +39,9 @@ class UDPWorker(channel: UDPChannel, master: ActorRef) extends Actor {
 
     case Receive() =>
       val udpPacket = channel.receive(channel.listen())
-      master ! Result(udpPacket)
+      udpPacket match {
+        case Some(packet) => master ! Result(packet)
+      }
 
     case CheckStatus() =>
       val dataToBeReTransmitted = channel.checkStackStatus()
@@ -61,11 +63,12 @@ object UDPWorker {
 }
 
 /********** Master Actor Implementation **********/
-class UDPMaster(name: String, channel: UDPChannel, workerPoolSize: Int = Runtime.getRuntime.availableProcessors()) extends Actor {
+class UDPMaster[A](name: String, channel: UDPChannel, workerPoolSize: Int = Runtime.getRuntime.availableProcessors()) extends Actor {
+  // todo : create channel inside
   private val actorSystem = ActorSystem(name)
   private var router: ActorRef = _
   private var scheduler: Cancellable = _
-  // private var resultMap = SortedMap.empty[Int, AnyRef]
+  private var resultMap = SortedMap.empty[Int, A]
 
   override def preStart(): Unit = {
     router = actorSystem.actorOf(RoundRobinPool(workerPoolSize).props(UDPWorker(channel, self)))
@@ -74,7 +77,7 @@ class UDPMaster(name: String, channel: UDPChannel, workerPoolSize: Int = Runtime
     println("Status checker scheduler created...")
   }
 
-  def process(taskList: List[AnyRef]): Unit = {
+  def process(taskList: List[Any]): Unit = {
     for (i <- taskList.indices) {
       router ! Send(taskList(i)) // send data
       router ! Receive() // and wait for response
@@ -86,8 +89,8 @@ class UDPMaster(name: String, channel: UDPChannel, workerPoolSize: Int = Runtime
       process(taskList)
 
     case Result(udpPacket) =>
-      // resultMap += (udpPacket.data.order -> udpPacket.data.result) todo : keep groupSeq in task and completed task
-      val data = udpPacket.data
+      val data = udpPacket.data.asInstanceOf[A]
+      resultMap += (data.order -> data.result) // todo : keep groupSeq in task and completed task
       println(s"Master Actor received task result $data")
 
     case ReTransmit(taskList) =>
@@ -102,6 +105,4 @@ class UDPMaster(name: String, channel: UDPChannel, workerPoolSize: Int = Runtime
   def inactive = ???
 
   def receive = active
-
-
 }

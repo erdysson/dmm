@@ -8,19 +8,19 @@ import transport.utils.Serializer
   * Created by taner.gokalp on 13/06/16.
   */
 
-private case class WaitingUDPPacket(timestamp: Long, data: AnyRef)
-case class UDPPacket(seq: Int, ack: Int, data: AnyRef)
+private case class WaitingUDPPacket(timestamp: Long, data: Any)
+case class UDPPacket(seq: Int, ack: Int, data: Any)
 
 class UDPChannel(val address: InetAddress, val port: Int, mtu: Int) extends Serializer {
   private val socket = new DatagramSocket(port)
 
   private val timeout = 4000
-  private val packetMap = scala.collection.mutable.Map.empty[Int, WaitingUDPPacket]
+  private var packetMap = scala.collection.mutable.Map.empty[Int, WaitingUDPPacket]
 
   private var seqCounter = 0
   private var ackCounter = 0
 
-  def send(data: AnyRef): Unit = {
+  def send(data: Any): Unit = {
     val dataAsUDPPacket = new UDPPacket(seq = seqCounter, ack = ackCounter, data)
     val dataAsByteStream = serialize(dataAsUDPPacket)
     val dataAsDatagramPacket = new DatagramPacket(dataAsByteStream, dataAsByteStream.length)
@@ -39,7 +39,7 @@ class UDPChannel(val address: InetAddress, val port: Int, mtu: Int) extends Seri
     packet
   }
 
-  def receive(dataAsDatagramPacket: DatagramPacket) = {
+  def receive(dataAsDatagramPacket: DatagramPacket): Option[UDPPacket] = {
     val dataAsByteStream = dataAsDatagramPacket.getData
     val udpPacket = deserialize(dataAsByteStream).asInstanceOf[UDPPacket]
 
@@ -50,28 +50,32 @@ class UDPChannel(val address: InetAddress, val port: Int, mtu: Int) extends Seri
         packetMap -= ack
         println(s"Packet map status : $packetMap")
         ackCounter = ack
+        Some(udpPacket)
       case None =>
         println(s"dropping packet which does not exist with sequence number $ack")
-        // todo : add return value inside pattern-matching
+        None
     }
-    udpPacket
+    // udpPacket
   }
 
-  def checkStackStatus(): List[AnyRef] = {
+  def checkStackStatus(): List[Any] = {
     println("checking map status...")
     packetMap.isEmpty match {
       case true =>
         println(s"There is no packet waiting to be acked in the map...")
-        List.empty[AnyRef]
+        List.empty[Any]
       case false =>
-        val packetsNeedsToBeReTransmitted = packetMap.values.filter(packet => System.currentTimeMillis() - packet.timestamp > timeout).toList
-        if (packetsNeedsToBeReTransmitted.isEmpty) {
-          println(s"There is no packet timed out in the map...")
-          List.empty[AnyRef]
-        } else {
-          val retransmittedData = packetsNeedsToBeReTransmitted.map(p => p.data)
-          println(s"Packets need to be re-transmitted : $retransmittedData")
-          retransmittedData
+        val packetsNeedsToBeReTransmitted = scala.collection.mutable.ListBuffer.empty[Any]
+        packetMap = packetMap.filter(waitingUdpPacket => {
+          System.currentTimeMillis() - waitingUdpPacket._2.timestamp >= timeout match {
+            case true => packetsNeedsToBeReTransmitted += waitingUdpPacket._2.data; false
+            case _ => true
+          }
+        })
+
+        packetsNeedsToBeReTransmitted.isEmpty match {
+          case true => println(s"There is no packet timed out in the map..."); List.empty[Any]
+          case false => println(s"Packets need to be re-transmitted : $packetsNeedsToBeReTransmitted"); packetsNeedsToBeReTransmitted.toList
         }
     }
   }
