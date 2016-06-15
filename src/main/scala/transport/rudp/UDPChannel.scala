@@ -1,11 +1,10 @@
 package transport.rudp
 
 import java.net.{DatagramPacket, DatagramSocket, InetAddress}
+import java.util.Date
 import java.util.concurrent.atomic.AtomicInteger
 import transport.utils.Serializer
-
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 
 /**
   * Created by taner.gokalp on 15/06/16.
@@ -17,17 +16,19 @@ case class DataPacket(seq: Int, data: Any) extends Packet
 
 case class RUDPData(data: Any, receiverAddress: InetAddress, receiverPort: Int)
 
+// todo : generate fin packet
+// todo : set send and receive buffer size
 class UDPChannel(val address: InetAddress = InetAddress.getByName("localhost"), val port: Int, mtu: Int, timeout: Int) extends Serializer {
   private val socket = new DatagramSocket(port)
   private val packetMap = mutable.Map.empty[Int, (Long, RUDPData)] // Sequence Number -> (Timestamp, Data)
 
   private val seq: AtomicInteger = new AtomicInteger(0)
 
-  def send(rudpData: RUDPData): Unit = { // todo : add chunk ability
-    val dataAsPacket = new DataPacket(seq.getAndIncrement(), rudpData.data)
+  def send(data: Any, receiverAddress: InetAddress, receiverPort: Int): Unit = { // todo : add chunk ability
+    val dataAsPacket = new DataPacket(seq.getAndIncrement(), data)
     // add data packet to the un-acked packet map
-    packetMap(dataAsPacket.seq) = (System.currentTimeMillis(), rudpData)
-    sendPacket(dataAsPacket, rudpData.receiverAddress, rudpData.receiverPort, needstoBeAcked = true)
+    packetMap(dataAsPacket.seq) = (System.currentTimeMillis(), new RUDPData(data, receiverAddress, receiverPort)) // server does not need receiver data !
+    sendPacket(dataAsPacket, receiverAddress, receiverPort)
   }
 
   def receive(): Option[RUDPData] = {
@@ -36,15 +37,15 @@ class UDPChannel(val address: InetAddress = InetAddress.getByName("localhost"), 
 
     val dataAsByteStream = dataAsDatagramPacket.getData
     val packet = deserialize(dataAsByteStream).asInstanceOf[Packet]
-    // match if the received packet is an ack packet or data packet
+    println(s"Received packet : $packet " + new Date())
+
     packet match {
       case a: AckPacket =>
         removeFromPacketMap(a.ack)
-        println(s"ack received for seq ${a.ack}")
         None
       case d: DataPacket =>
-        println(s"channel at $address: $port received ${dataAsByteStream.length} byte data from ${dataAsDatagramPacket.getAddress}:${dataAsDatagramPacket.getPort}")
-        sendPacket(new AckPacket(d.seq), dataAsDatagramPacket.getAddress, dataAsDatagramPacket.getPort, needstoBeAcked = false)
+        // println(s"channel at $address: $port received ${dataAsByteStream.length} byte data from ${dataAsDatagramPacket.getAddress}:${dataAsDatagramPacket.getPort}")
+        sendPacket(new AckPacket(d.seq), dataAsDatagramPacket.getAddress, dataAsDatagramPacket.getPort)
         Some(new RUDPData(d.data, dataAsDatagramPacket.getAddress, dataAsDatagramPacket.getPort))
       case _ =>
         println("Unexpected packet type. Probably corrupted...")
@@ -69,11 +70,12 @@ class UDPChannel(val address: InetAddress = InetAddress.getByName("localhost"), 
     }
   }
 
-  private def sendPacket(packet: Packet, receiverAddress: InetAddress, receiverPort: Int, needstoBeAcked: Boolean = true): Unit = {
+  private def sendPacket(packet: Packet, receiverAddress: InetAddress, receiverPort: Int): Unit = {
     val dataAsByteStream = serialize(packet)
     val dataAsDatagramPacket = new DatagramPacket(dataAsByteStream, dataAsByteStream.length, receiverAddress, receiverPort)
+    println(s"sending packet $packet " + new Date())
     socket.send(dataAsDatagramPacket)
-    println(s"channel at $address:$port sending ${dataAsByteStream.length} byte data to $receiverAddress:$receiverPort")
+    // println(s"channel at $address:$port sending ${dataAsByteStream.length} byte data to $receiverAddress:$receiverPort")
   }
 
   private def removeFromPacketMap(ack: Int): Unit = {
