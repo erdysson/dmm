@@ -61,5 +61,5 @@ class Client(name: String, channel: UDPChannel, workerPoolSize: Int = Runtime.ge
 }
 
 object Client {
-  def apply[A](name: String, channel: UDPChannel, workerPoolSize: Int = Runtime.getRuntime.availableProcessors()): Props = Props(classOf[Client], name, channel, workerPoolSize)
+  def apply(name: String, channel: UDPChannel, workerPoolSize: Int = Runtime.getRuntime.availableProcessors()): Props = Props(classOf[Client], name, channel, workerPoolSize)
 }

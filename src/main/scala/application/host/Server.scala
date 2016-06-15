@@ -24,7 +24,7 @@ class Server(name: String, channel: UDPChannel, workerPoolSize: Int = Runtime.ge
 
   override def preStart(): Unit = {
     // todo : update router
-    router = actorSystem.actorOf(RoundRobinPool(workerPoolSize).props(ServerWorker(channel, (InetAddress.getLocalHost, 9875), self)))
+    router = actorSystem.actorOf(RoundRobinPool(workerPoolSize).props(ServerWorker(channel, (InetAddress.getByName("localhost"), 9875), self)))
 
 //    val router = {
 //      val routees = Vector.fill(workerPoolSize) {
@@ -71,5 +71,5 @@ class Server(name: String, channel: UDPChannel, workerPoolSize: Int = Runtime.ge
 }
 
 object Server {
-  def apply[A](name: String, channel: UDPChannel, workerPoolSize: Int = Runtime.getRuntime.availableProcessors()): Props = Props(classOf[Server], name, channel, workerPoolSize)
+  def apply(name: String, channel: UDPChannel, workerPoolSize: Int = Runtime.getRuntime.availableProcessors()): Props = Props(classOf[Server], name, channel, workerPoolSize)
 }

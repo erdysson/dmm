@@ -30,6 +30,7 @@ class ClientWorker(val channel: UDPChannel, master: ActorRef) extends Actor {
     case ReceiveFromServer() =>
       val datagramPacket = channel.listen()
       val udpPacket = channel.receive(datagramPacket)
+      println(s"Client received from server $udpPacket")
       udpPacket match {
         case Some(packet) => master ! ResultFromServer(packet, (datagramPacket.getAddress, datagramPacket.getPort))
         case None => println(s"Packet is not relevant")

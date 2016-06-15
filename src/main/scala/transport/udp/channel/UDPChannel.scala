@@ -1,6 +1,7 @@
 package transport.udp.channel
 
 import java.net.{DatagramPacket, DatagramSocket, InetAddress}
+import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 import transport.udp.{UDPPacket, WaitingUDPPacket}
 import transport.utils.Serializer
 
@@ -11,10 +12,11 @@ import transport.utils.Serializer
 class UDPChannel(val address: InetAddress, val port: Int, mtu: Int) extends Serializer {
   private val socket = new DatagramSocket(port)
   // todo : parametrize timeout value
-  private val timeout = 4000
+  private val timeout = 5000
   private var packetMap = scala.collection.mutable.Map.empty[Int, WaitingUDPPacket]
 
-  private var seqCounter = 0
+  private val seq: AtomicInteger = new AtomicInteger(0)
+  @volatile private var seqCounter = 0
   private var ackCounter = 0
 
   def send(data: Any, remoteConfig: (InetAddress, Int)): Unit = {
@@ -23,22 +25,26 @@ class UDPChannel(val address: InetAddress, val port: Int, mtu: Int) extends Seri
     val dataAsDatagramPacket = new DatagramPacket(dataAsByteStream, dataAsByteStream.length, remoteConfig._1, remoteConfig._2)
 
     packetMap += (seqCounter -> new WaitingUDPPacket(System.currentTimeMillis(), data, remoteConfig))
-    println(s"Adding packet to map with sequence number $seqCounter")
-
-    println(s"$address:$port sending $data as datagram packet with sequence number $seqCounter...")
-    socket.send(dataAsDatagramPacket)
     seqCounter += 1
+    println(s"Adding packet to map with sequence number ${seq.addAndGet(1)}, $seq")
+
+    println(s"Sending to $remoteConfig")
+
+    socket.send(dataAsDatagramPacket)
   }
 
   def listen(): DatagramPacket = {
     val packet = new DatagramPacket(new Array[Byte](mtu), mtu)
     socket.receive(packet)
+    println(s"Channel received packet $packet")
     packet
   }
 
   def receive(dataAsDatagramPacket: DatagramPacket): Option[UDPPacket] = {
     val dataAsByteStream = dataAsDatagramPacket.getData
     val udpPacket = deserialize(dataAsByteStream).asInstanceOf[UDPPacket]
+
+    println(s"received packet : $udpPacket")
 
     val ack = udpPacket.ack
     packetMap.get(ack) match {
@@ -51,6 +57,7 @@ class UDPChannel(val address: InetAddress, val port: Int, mtu: Int) extends Seri
       case None =>
         println(s"dropping packet which does not exist with sequence number $ack")
         None
+        // todo : drop only on server
     }
   }
 

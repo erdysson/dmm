@@ -29,6 +29,7 @@ class ServerWorker(val channel: UDPChannel, remoteConfig: (InetAddress, Int), ma
 
     case ReceiveFromClient() =>
       val udpPacket = channel.receive(channel.listen())
+      println(s"Received from client $udpPacket")
       udpPacket match {
         case Some(packet) => master ! ResultFromClient(packet)
         case None => println(s"Packet is not relevant")
