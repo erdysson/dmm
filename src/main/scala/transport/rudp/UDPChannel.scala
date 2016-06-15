@@ -37,7 +37,7 @@ class UDPChannel(val address: InetAddress = InetAddress.getByName("localhost"), 
 
     val dataAsByteStream = dataAsDatagramPacket.getData
     val packet = deserialize(dataAsByteStream).asInstanceOf[Packet]
-    println(s"Received packet : $packet " + new Date())
+    // println(s"Received packet : $packet " + new Date())
 
     packet match {
       case a: AckPacket =>
@@ -58,13 +58,11 @@ class UDPChannel(val address: InetAddress = InetAddress.getByName("localhost"), 
       case true => None
       case _ =>
         val packetsToBeRetransmitted = mutable.ListBuffer.empty[RUDPData]
-        packetMap.dropWhile(p => {
-          val isTimedOut = System.currentTimeMillis() - p._2._1 >= timeout
-          if (isTimedOut) {
-            val rudpData = p._2._2
-            packetsToBeRetransmitted.append(rudpData)
-          }
-          isTimedOut
+        packetMap.retain((seq, rest) => {
+          val isTimedOut = System.currentTimeMillis() - rest._1 >= timeout
+          if (isTimedOut)
+            packetsToBeRetransmitted.append(rest._2)
+          !isTimedOut
         })
         if (packetsToBeRetransmitted.isEmpty) None else Some(packetsToBeRetransmitted.toList)
     }
@@ -73,7 +71,7 @@ class UDPChannel(val address: InetAddress = InetAddress.getByName("localhost"), 
   private def sendPacket(packet: Packet, receiverAddress: InetAddress, receiverPort: Int): Unit = {
     val dataAsByteStream = serialize(packet)
     val dataAsDatagramPacket = new DatagramPacket(dataAsByteStream, dataAsByteStream.length, receiverAddress, receiverPort)
-    println(s"sending packet $packet " + new Date())
+    // println(s"sending packet $packet " + new Date())
     socket.send(dataAsDatagramPacket)
     // println(s"channel at $address:$port sending ${dataAsByteStream.length} byte data to $receiverAddress:$receiverPort")
   }
