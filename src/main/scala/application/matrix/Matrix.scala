@@ -49,20 +49,20 @@ object Matrix {
     matrix
   }
 
-  // todo : recurse or improve the distribution
-  // todo : keep groupSeq in task and completed task
   def distribute(matrix1: Vector[Vector[Int]], matrix2: Vector[Vector[Int]], withLogging: Boolean = false): ListBuffer[Task] = {
     var order = 0
+    var groupOrder = 0
     var distribution = ListBuffer.empty[Task]
 
     val distributionStart = System.currentTimeMillis()
 
     matrix1 foreach(m1Row => {
       matrix2 foreach(m2Row => {
-        order += 1
-        val task = new Task(order, m1Row, m2Row)
+        val task = new Task(order, groupOrder, m1Row, m2Row)
         distribution += task
+        order += 1
       })
+      groupOrder += 1
     })
 
     if (withLogging) {

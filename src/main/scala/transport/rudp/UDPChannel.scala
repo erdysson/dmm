@@ -21,7 +21,6 @@ class UDPChannel(val address: InetAddress = InetAddress.getByName("localhost"), 
   private val socket = new DatagramSocket(port)
   private val packetMap = mutable.Map.empty[Int, (Long, RUDPData)] // Sequence Number -> (Timestamp, Data)
   private var fragmentMap = mutable.Map.empty[Int, ListBuffer[Fragment]]
-
   private val seq: AtomicInteger = new AtomicInteger(0)
 
   def send(data: Any, receiverAddress: InetAddress, receiverPort: Int): Unit = {
@@ -58,9 +57,8 @@ class UDPChannel(val address: InetAddress = InetAddress.getByName("localhost"), 
               case true =>
                 sendPacket(new AckPacket(fragment.seq), dataAsDatagramPacket.getAddress, dataAsDatagramPacket.getPort)
 
-                var completeByteArray = Array.empty[Byte]
-                listBuffer.sortBy(_.fSeq).foreach(frag => completeByteArray ++= frag.bytes)
-                val dataPacket = deserialize(completeByteArray).asInstanceOf[DataPacket]
+                val dataPacketAsByteStream = listBuffer.sortBy(_.fSeq).map(_.bytes).reduceLeft(_ ++ _)
+                val dataPacket = deserialize(dataPacketAsByteStream).asInstanceOf[DataPacket]
 
                 fragmentMap -= fragment.seq
                 Some(new RUDPData(dataPacket.data, dataAsDatagramPacket.getAddress, dataAsDatagramPacket.getPort))
