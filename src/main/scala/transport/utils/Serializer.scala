@@ -36,7 +36,7 @@ trait Serializer {
     }
   }
 
-  def deserialize(serialized: Array[Byte]): AnyRef = {
+  def deserialize(serialized: Array[Byte]): Any = {
     val inputStream = new ByteArrayInputStream(serialized)
     var objectInput: Option[ObjectInput] = None
 

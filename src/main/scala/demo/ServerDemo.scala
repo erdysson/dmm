@@ -73,12 +73,12 @@ class Sender(name: String, channel: UDPChannel, remoteConfig: (InetAddress, Int)
 object ServerDemo {
   @throws[Exception]
   def main(args: Array[String]) {
-    val matrix = Matrix.random(6, withLogging = false)
+    val matrix = Matrix.random(2, withLogging = false)
     val transpose = Matrix.transpose(matrix, withLogging = false)
     val taskList = Matrix.distribute(matrix, transpose)
 
     val remoteConfig = (InetAddress.getByName("localhost"), 9875)
-    val channel = new UDPChannel(port = 9876, mtu = 4096, timeout = 3000)
+    val channel = new UDPChannel(port = 9876, mtu = 512, timeout = 3000)
 
     val system = ActorSystem("Server")
     implicit val executor = system.dispatcher

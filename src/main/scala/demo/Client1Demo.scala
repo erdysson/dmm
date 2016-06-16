@@ -83,7 +83,7 @@ class ClientListener(name: String, channel: UDPChannel, router: ActorRef) extend
 object Client1Demo {
   @throws[Exception]
   def main(args: Array[String]) {
-    val channel = new UDPChannel(port = 9875, mtu = 4096, timeout = 3000)
+    val channel = new UDPChannel(port = 9875, mtu = 512, timeout = 3000)
 
     val system = ActorSystem("Client-1")
     implicit val executor = system.dispatcher
